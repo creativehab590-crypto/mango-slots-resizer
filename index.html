@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mango Design Studio - SVG Slot Resizer</title>
+    <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: #0f111a; color: #e4e6eb; margin: 0; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; }
+        .container { background: #1a1d29; padding: 40px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-width: 550px; width: 100%; text-align: center; border: 1px solid #2e3349; }
+        h1 { color: #ff6b00; margin: 0 0 10px 0; font-size: 28px; font-weight: 800; letter-spacing: 0.5px; }
+        p { color: #9da4b4; font-size: 15px; margin-bottom: 35px; }
+        .upload-box { border: 2px dashed #ff6b00; padding: 40px 20px; border-radius: 12px; cursor: pointer; background: #222638; transition: all 0.3s ease; margin-bottom: 30px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .upload-box:hover { background: #2a2f45; border-color: #ff8533; }
+        .upload-icon { font-size: 40px; color: #ff6b00; }
+        .inputs { display: flex; justify-content: space-between; margin-bottom: 30px; gap: 20px; }
+        .input-group { flex: 1; text-align: left; }
+        label { font-size: 13px; font-weight: 600; color: #9da4b4; display: block; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        input { width: 100%; padding: 12px; border: 1px solid #2e3349; border-radius: 8px; font-size: 16px; background: #0f111a; color: #fff; box-sizing: border-box; outline: none; transition: 0.2s; }
+        input:focus { border-color: #ff6b00; box-shadow: 0 0 0 2px rgba(255,107,0,0.2); }
+        button { width: 100%; background: #ff6b00; color: white; border: none; padding: 15px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.5px; }
+        button:hover { background: #e05e00; transform: translateY(-1px); }
+        button:active { transform: translateY(1px); }
+        #status { margin-top: 20px; font-size: 14px; font-weight: 600; padding: 10px; border-radius: 6px; display: none; }
+        .status-success { background: rgba(40,167,69,0.1); color: #28a745; display: block !important; }
+        .status-error { background: rgba(220,53,69,0.1); color: #dc3545; display: block !important; }
+        footer { margin-top: 30px; font-size: 12px; color: #5f6577; }
+        footer a { color: #ff6b00; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Mango Slots Resizer</h1>
+    <p>Профессиональная подгонка пазов под толщину фанеры</p>
+    
+    <div class="upload-box" id="dropZone">
+        <div class="upload-icon">📥</div>
+        <span id="uploadText">Перетащите сюда ваш SVG макет или нажмите для выбора</span>
+        <input type="file" id="fileInput" accept=".svg" style="display: none;">
+    </div>
+
+    <div class="inputs">
+        <div class="input-group">
+            <label>Паз в файле (мм):</label>
+            <input type="number" id="oldSize" value="4.0" step="0.01">
+        </div>
+        <div class="input-group">
+            <label>Реальная фанера (мм):</label>
+            <input type="number" id="newSize" value="3.8" step="0.01">
+        </div>
+    </div>
+
+    <button id="processBtn">Пересчитать пазы и скачать</button>
+    <div id="status"></div>
+    
+    <footer>© Brand by Mango Design Studio. Все вычисления безопасны и происходят локально.</footer>
+</div>
+
+<script>
+    let svgContent = "";
+    let fileName = "mango_resized.svg";
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const status = document.getElementById('status');
+  dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = "#ff8533"; });
+    dropZone.addEventListener('dragleave', () => dropZone.style.borderColor = "#ff6b00");
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = "#ff6b00";
+        handleFile(e.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', (e) => handleFile(e.target.files));
+
+    function handleFile(files) {
+        const file = files[0];
+        if (!file || !file.name.endsWith('.svg')) {
+            showStatus("Пожалуйста, выберите корректный файл формата SVG.", "error");
+            return;
+        }
+        fileName = "mango_" + file.name;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            svgContent = e.target.result;
+            showStatus(Макет "${file.name}" загружен успешно!, "success");
+            document.getElementById('uploadText').innerText = file.name;
+        };
+        reader.readAsText(file);
+    }
+
+    function showStatus(text, type) {
+        status.className = type === "success" ? "status-success" : "status-error";
+        status.innerText = text;
+    }
+
+    document.getElementById('processBtn').addEventListener('click', () => {
+        if (!svgContent) {
+            showStatus("Сначала загрузите векторный файл SVG!", "error");
+            return;
+        }
+
+        const oldMm = parseFloat(document.getElementById('oldSize').value);
+        const newMm = parseFloat(document.getElementById('newSize').value);
+        
+        if (isNaN(oldMm)  isNaN(newMm)  oldMm <= 0 || newMm <= 0) {
+            showStatus("Введите корректные размеры в миллиметрах.", "error");
+            return;
+        }
+
+        // Коэффициент перевода мм в пиксели для лазерного софта (96 DPI: 1 мм = 3.77952755 px)
+        const k = 3.779527559055118; 
+        const oldPx = oldMm * k;
+        const newPx = newMm * k;
+        
+        // Погрешность поиска пазов (0.4 мм в пикселях), чтобы отлавливать округления софта типа 3.99мм
+        const tolerance = 0.4 * k; 
+
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(svgContent, "image/svg+xml");
+        
+        // Обработка прямоугольников <rect>
+        const rects = xmlDoc.getElementsByTagName("rect");
+        let changedCount = 0;
+
+        for (let i = 0; i < rects.length; i++) {
+            let rect = rects[i];
+            let w = parseFloat(rect.getAttribute("width"));
+            let h = parseFloat(rect.getAttribute("height"));
+
+            if (isNaN(w) || isNaN(h)) continue;
+
+            // Нашли вертикальный паз
+            if (Math.abs(w - oldPx) < tolerance) {
+                let delta = newPx - w;
+                rect.setAttribute("width", newPx.toFixed(4));
+                let currentX = parseFloat(rect.getAttribute("x")) || 0;
+                rect.setAttribute("x", (currentX - (delta / 2)).toFixed(4));
+                changedCount++;
+            }
+            // Нашли горизонтальный паз
+            else if (Math.abs(h - oldPx) < tolerance) {
+                let delta = newPx - h;
+                rect.setAttribute("height", newPx.toFixed(4));
+                let currentY = parseFloat(rect.getAttribute("y")) || 0;
+                rect.setAttribute("y", (currentY - (delta / 2)).toFixed(4));
+                changedCount++;
+            }
+        }
+
+        const serializer = new XMLSerializer();
+        const outputSvg = serializer.serializeToString(xmlDoc);
+
+        const blob = new Blob([outputSvg], {type: "image/svg+xml"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        showStatus(Успех! Автоматически изменено пазов: ${changedCount}. Файл скачан., "success");
+    });
+</script>
+</body>
+</html>
